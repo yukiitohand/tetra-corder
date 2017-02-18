@@ -6,9 +6,10 @@ for i=1:length(refList)
     fpath = [res_dir '/' base];
     im_file = [fpath '.fd'];
     hdr_file = [im_file '.hdr'];
-    [im,info] = enviread(im_file,hdr_file);
+    [hdr_info] = envihdrreadx(hdr_file);
+    [im] = envidataread(im_file,hdr_info);
     refList(i).map = im;
-    refList(i).map_info = info;
+    refList(i).map_info = hdr_info;
 end
 
 % read summary that is not included in the original references
@@ -31,7 +32,8 @@ if ~isempty(summary)
         base = summary(i).outputbase;
         fpath = [res_dir '/' base];
         im_file = [fpath '.fd'];
-        [im,info] = enviread(im_file,hdr_file);
+        hdr_info = envihdrreadx(hdr_file);
+        [im] = envidataread(im_file,hdr_info);
         summary(i).map = im;
     end
 
