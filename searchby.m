@@ -50,9 +50,10 @@ if strcmp(field,'irecno') || strcmp(field,'g_id')
         resIdxtmp = [arOfstruct.(field)]==val;
         resIdx = or(resIdx,resIdxtmp);
     end
-elseif strcmp(field,'ititl') || strcmp(field,'desc') || strcmp(field,'name') || strcmp(field,'outputbase') || strcmp(field,'group')
+else
+% elseif strcmp(field,'ititl') || strcmp(field,'desc') || strcmp(field,'name') || strcmp(field,'outputbase') || strcmp(field,'group')
     if iscell(vals)
-        for iv=1:lengths(vals)
+        for iv=1:length(vals)
             val = vals(iv);
             valList = [{arOfstruct.(field)}];
             for i=1:length(valList)
@@ -63,6 +64,10 @@ elseif strcmp(field,'ititl') || strcmp(field,'desc') || strcmp(field,'name') || 
                         end
                     elseif strcmp(comp_func,'strcmp')
                         if strcmp(valList{i},val)
+                            resIdx(i) = true;
+                        end
+                    elseif strcmp(comp_func,'strcmpi')
+                        if strcmpi(valList{i},val)
                             resIdx(i) = true;
                         end
                     end
@@ -81,6 +86,10 @@ elseif strcmp(field,'ititl') || strcmp(field,'desc') || strcmp(field,'name') || 
                 elseif strcmp(comp_func,'strcmp')
                     if strcmp(valList{i},val)
                             resIdx(i) = true;
+                    end
+                elseif strcmp(comp_func,'strcmpi')
+                    if strcmpi(valList{i},val)
+                        resIdx(i) = true;
                     end
                 end
             end
