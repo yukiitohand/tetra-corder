@@ -31,7 +31,7 @@ else
             otherwise
                 % Hmmm, something wrong with the parameter string
                 error(['Unrecognized option: ''' varargin{i} '''']);
-        end;
+        end
     end
 end
 
@@ -54,7 +54,7 @@ else
 % elseif strcmp(field,'ititl') || strcmp(field,'desc') || strcmp(field,'name') || strcmp(field,'outputbase') || strcmp(field,'group')
     if iscell(vals)
         for iv=1:length(vals)
-            val = vals(iv);
+            val = vals{iv};
             valList = [{arOfstruct.(field)}];
             for i=1:length(valList)
                 if ~isempty(valList{i})

@@ -16,7 +16,7 @@ function [ records, spectra, rawSpectra ] = hyperReadSpecprYuki( filename )
 dbstop if error;
 f = fopen(filename, 'r');
 if (f == -1)
-    error(sprintf('Failed to open file: %s'), filename);
+    error(sprintf('Failed to open file: %s', filename));
 end
 
 % Ignore the first record.
@@ -30,23 +30,38 @@ numRawSpectra = 0;
 numRecords = 0;
 
 done = 0;
+rec_no = 0;
 while (not(done))
+    rec_no = rec_no+1; % added by Yuki 06/27/2017
     r = uint32(fread(f, 1536/4, 'uint32', 'ieee-be'));
     if (length(r) == 0)
         break;
     end
-    numRecords
     r = swapbytes(r);
     r = typecast(r, 'uint8');
     % First two bits of file.  I am making this verbose here so it is clear what I
     % am doing.
     firstTwoBits = dec2bin(bitand(r(4), 3));
+    firstTwoBits = sprintf('%02s',firstTwoBits);
+    % added by Yuki Itoh 06/27/2017
     
     %  Parse first two bits.
-    if (firstTwoBits == '10')
-        % This is a text record. Skip.
+    % edited to use strcmp (by Yuki Itoh 06/27/2017)
+    if strcmp(firstTwoBits,'10')
+        % This is a text record.
+        % not skip (06/27/2017 Yuki Itoh)
+        record = [];
+        data = [];
+        record.ititl = char(r(5:44)).';
+        record.usernm = char(r(45:52)).';
+        record.itxtpt = swapbytes(typecast(r(53:56), 'int32'));
+        record.itxtch = swapbytes(typecast(r(57:60), 'int32'));
+        itext = char(r(61:1536)).';
+        record.itext = itext;
         numRecords = numRecords + 1;
-    elseif (firstTwoBits == '0')
+        rec_no_parent = rec_no;
+        records{rec_no_parent} = record;
+    elseif strcmp(firstTwoBits,'00')
         % This is an actual (initial) data record.
         % modified by Yuki 07/10/2015
         % comment and move to the end of this clause
@@ -75,7 +90,7 @@ while (not(done))
         record.irwav = swapbytes(typecast(r(101:104), 'int32'));
         record.irespt = swapbytes(typecast(r(105:108), 'int32'));
         record.irecno = swapbytes(typecast(r(109:112), 'int32'));
-        itpntr = typecast(r(113:116), 'int32');
+        record.itpntr = swapbytes(typecast(r(113:116), 'int32'));
         ihist = char(r(117:176)).';
         mhist = char(r(177:472)).';
         nruns = typecast(r(473:476), 'int32');
@@ -95,18 +110,21 @@ while (not(done))
         % added by Yuki 07/10/2015
         numRecords = numRecords+1;
         records{record.irecno} = record;
-        if record.irecno==22
-            fprintf('%d\n',numRecords)
-        end
-    elseif (firstTwoBits == '1')
+%         if record.irecno==22
+%             fprintf('%d\n',numRecords)
+%         end
+    elseif strcmp(firstTwoBits,'01')
         % Continuation of data values.
         cData = swapbytes(typecast(r(5:1536), 'single')); 
         cData(find(cData < -1e34)) = 0;
         data = [data; cData];
         record.data = data;
         records{record.irecno} = record;
-    else
-        numRecords = numRecords + 1;
+    elseif strcmp(firstTwoBits,'11')
+        tData = char(r(5:1536))'; 
+        itext = [itext tData];
+        record.itext = itext;
+        records{rec_no_parent} = record;
     end
 end
 
@@ -126,6 +144,11 @@ for q=1:s
     if (isempty(records{q}))
         continue;
     end
+    % added by Yuki 06/27/2017
+    if ~isfield(records{q},'irecno')
+        continue;
+    end
+    
     % added by Yuki 07/10/2015
     if (not(isempty(strfind(records{q}.ititl, 'errors to previous data'))))
         rawSpectra(numRawSpectra).errors = records{q}.data;
@@ -155,16 +178,37 @@ for q=1:s
     end
     lambdas = records{records{q}.irwav}.data;
     spectrum = records{q}.data;
+    
     if (length(lambdas) ~= length(spectrum))
         fprintf('Error %d !!!\n', q);
         continue;
     end
+    
+    
     numRawSpectra = numRawSpectra + 1;
-    rawSpectra(numRawSpectra).irecno = q; % added by Yuki 07/13/2015
+    rawSpectra(numRawSpectra).irecno = records{q}.irecno; % added by Yuki 07/13/2015
     rawSpectra(numRawSpectra).name = records{q}.ititl;
     rawSpectra(numRawSpectra).ititl = records{q}.ititl;
     rawSpectra(numRawSpectra).wavelength = lambdas;
     rawSpectra(numRawSpectra).reflectance = spectrum;
+    
+    if records{q}.itpntr>0
+        itext = records{records{q}.itpntr}.itext;
+        itext = itext(1:records{records{q}.itpntr}.itxtch);
+        [doc_format] = find_documentation_format(itext);
+        rawSpectra(numRawSpectra).description = itext;
+        rawSpectra(numRawSpectra).documentation_format = doc_format;
+    else
+        rawSpectra(numRawSpectra).description = '';
+        rawSpectra(numRawSpectra).documentation_format ='';
+    end
+    
+%     if records{q}.itpntr < length(records)
+%         descript = records{records{q}.itpntr}.data;
+%         descript = char(typecast(descript,'uint8'));
+%         rawSpectra(numRawSpectra).description = descript;
+%     end
+    
     goodIdx = find(lambdas > 0);
     lambdas = lambdas(goodIdx);
     spectrum = spectrum(goodIdx);
@@ -193,3 +237,16 @@ for q=1:s
 end
 
 return;
+
+end
+
+
+function [doc_format] = find_documentation_format(descript_html)
+ptr = '<p>[\s]*DOCUMENTATION_FORMAT:\s*([a-zA-Z]{1}[ a-zA-Z]*[a-zA-Z]{1}|[a-zA-Z]{1})[\s]*<p>';
+doc_format = regexp(descript_html,ptr,'tokens');
+if isempty(doc_format)
+    doc_format = '';
+else
+    doc_format = doc_format{1}{1};
+end
+end
