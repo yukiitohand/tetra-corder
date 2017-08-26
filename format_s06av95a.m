@@ -24,14 +24,14 @@ resol = resol.reflectance(valid_channels);
 % resol = resol(channel_mapper);
 
 for i=1:length(spcs_av95)
-    wavelengths = spcs_av95(i).wavelengths;
-    wavelengths = wavelengths(valid_channels);
+    wavelength = spcs_av95(i).wavelength;
+    wavelength = wavelength(valid_channels);
 %     wavelengths = wavelengths(channel_mapper);
     reflectance = spcs_av95(i).reflectance;
     reflectance = reflectance(valid_channels);
 %     reflectance = reflectance(channel_mapper);
     
-    spcs_av95(i).wavelengths = wavelengths;
+    spcs_av95(i).wavelength = wavelength;
     spcs_av95(i).reflectance = reflectance;
     spcs_av95(i).resolution = resol;
     spcs_av95(i).channels = channel_mapper;
