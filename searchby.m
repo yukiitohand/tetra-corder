@@ -19,7 +19,7 @@ function [ res,resIdx ] = searchby( field,vals,arOfstruct, varargin )
 %   resIdx: corresponding indices
 
 
-comp_func = 'regexp';
+comp_func = 'regexpi';
 
 if (rem(length(varargin),2)==1)
     error('Optional parameters should always go by pairs');
@@ -58,8 +58,8 @@ else
             valList = [{arOfstruct.(field)}];
             for i=1:length(valList)
                 if ~isempty(valList{i})
-                    if strcmp(comp_func,'regexp')
-                        if ~isempty(regexp(valList{i},val))
+                    if strcmp(comp_func,'regexpi')
+                        if ~isempty(regexpi(valList{i},val))
                             resIdx(i) = true;
                         end
                     elseif strcmp(comp_func,'strcmp')
@@ -79,8 +79,8 @@ else
         valList = [{arOfstruct.(field)}];
         for i=1:length(valList)
             if ~isempty(valList{i})
-                if strcmp(comp_func,'regexp')
-                    if ~isempty(regexp(valList{i},val))
+                if strcmp(comp_func,'regexpi')
+                    if ~isempty(regexpi(valList{i},val))
                         resIdx(i) = true;
                     end
                 elseif strcmp(comp_func,'strcmp')
