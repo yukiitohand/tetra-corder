@@ -59,6 +59,9 @@ else
             for i=1:length(valList)
                 if ~isempty(valList{i})
                     if strcmp(comp_func,'regexpi')
+                        if isnumeric(valList{i})
+                            valList{i} = num2str(valList{i});
+                        end
                         if ~isempty(regexpi(valList{i},val))
                             resIdx(i) = true;
                         end
@@ -80,6 +83,9 @@ else
         for i=1:length(valList)
             if ~isempty(valList{i})
                 if strcmp(comp_func,'regexpi')
+                    if isnumeric(valList{i})
+                            valList{i} = num2str(valList{i});
+                    end
                     if ~isempty(regexpi(valList{i},val))
                         resIdx(i) = true;
                     end
